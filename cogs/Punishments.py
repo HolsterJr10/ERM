@@ -102,6 +102,8 @@ class Punishments(commands.Cog):
 
         auto_punish = settings.get("ERLC", {}).get("auto_punish", False)
         present_unpermitted_warning = False
+        roblox_username = None
+        server_staff = []
         if auto_punish is True:
             server_staff = await self.bot.prc_api.get_server_staff(ctx.guild.id)
             roblox_username = await self.bot.accounts.discord_to_roblox(ctx.guild, ctx.author.id)
