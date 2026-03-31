@@ -76,9 +76,11 @@ class Player(BaseDataClass):
 
 
 class ModCall(BaseDataClass):
-    caller: str
-    moderator: str | None = None
+    caller_username: str
+    caller_id: str
     timestamp: int
+    moderator_username: str | None = None
+    moderator_id: str | None = None
 
 
 class ServerStatus(BaseDataClass):

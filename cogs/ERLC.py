@@ -213,7 +213,7 @@ class ERLC(commands.Cog):
                 discord.ui.TextDisplay(
                     "\n".join(
                         [
-                            f"> Caller: {call.caller} • Moderator: {call.moderator} • <t:{call.timestamp}:F>"
+                            f"> Caller: {call.caller_username} • Moderator: {call.moderator_username or 'n/a'} • <t:{call.timestamp}:F>"
                             for call in matching_modcalls
                         ]
                     )
