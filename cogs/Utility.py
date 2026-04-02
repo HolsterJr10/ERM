@@ -536,7 +536,6 @@ class Utility(commands.Cog):
         extras={"category": "Utility"},
     )
     async def help(self, ctx: commands.Context):
-        # Map original categories to consolidated display categories
         category_map = {
             "Utility": "General",
             "Website": "General",
