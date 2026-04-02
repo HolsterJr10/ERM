@@ -12,6 +12,7 @@ import pytz
 
 from menus import LinkView, CustomSelectMenu, MultiPaginatorMenu, APIKeyConfirmation
 from utils.constants import BLANK_COLOR, GREEN_COLOR
+from utils.paginators import SelectPagination, CustomPage
 from utils.timestamp import td_format
 from utils.utils import invis_embed, failure_embed, require_settings, time_converter
 from erm import is_staff, is_management
@@ -20,7 +21,6 @@ from erm import is_staff, is_management
 class Utility(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-
 
     @commands.hybrid_group(
         name="import",
@@ -38,7 +38,12 @@ class Utility(commands.Cog):
     )
     @commands.cooldown(1, 300, commands.BucketType.guild)
     @is_management()
-    async def import_punishments(self, ctx: commands.Context, channel: discord.TextChannel=None, time_frame: str=None):
+    async def import_punishments(
+        self,
+        ctx: commands.Context,
+        channel: discord.TextChannel = None,
+        time_frame: str = None,
+    ):
         if channel is None:
             channel = ctx.channel
 
@@ -46,14 +51,22 @@ class Utility(commands.Cog):
         if time_frame is None:
             after = datetime.datetime.fromtimestamp(1754516493)
         else:
-            after = datetime.datetime.fromtimestamp(datetime.datetime.now(tz=pytz.UTC).timestamp() - time_converter(time_frame))
+            after = datetime.datetime.fromtimestamp(
+                datetime.datetime.now(tz=pytz.UTC).timestamp()
+                - time_converter(time_frame)
+            )
 
         msg = await ctx.send(
             embed=discord.Embed(
                 title="Punishments Import",
-                description="> **Channel:** {}\n> **After:** <t:{}:R>\n> **Imported:** 0".format(channel.mention, int(after.timestamp())),
+                description="> **Channel:** {}\n> **After:** <t:{}:R>\n> **Imported:** 0".format(
+                    channel.mention, int(after.timestamp())
+                ),
                 color=BLANK_COLOR,
-            ).set_author(name=ctx.guild.name, icon_url=ctx.guild.icon.url if ctx.guild.icon else None)
+            ).set_author(
+                name=ctx.guild.name,
+                icon_url=ctx.guild.icon.url if ctx.guild.icon else None,
+            )
         )
         success = 0
         async for message in channel.history(limit=None, after=after):
@@ -74,22 +87,38 @@ class Utility(commands.Cog):
 
             punishment = {}
             punishment["Moderator"] = ""
-            punishment["ModeratorID"] = int(moderator_field.value.split("<@")[1].split(">")[0])
-            punishment["Snowflake"] = int(moderator_field.value.split("`")[1].split("`")[0])
-            punishment["Reason"] = moderator_field.value.split("Reason:** ")[1].split("\n")[0]
-            punishment["Epoch"] = int(moderator_field.value.split("<t:")[1].split(">")[0])
-            punishment["Username"] = violator_field.value.split("Username:** ")[1].split("\n")[0]
+            punishment["ModeratorID"] = int(
+                moderator_field.value.split("<@")[1].split(">")[0]
+            )
+            punishment["Snowflake"] = int(
+                moderator_field.value.split("`")[1].split("`")[0]
+            )
+            punishment["Reason"] = moderator_field.value.split("Reason:** ")[1].split(
+                "\n"
+            )[0]
+            punishment["Epoch"] = int(
+                moderator_field.value.split("<t:")[1].split(">")[0]
+            )
+            punishment["Username"] = violator_field.value.split("Username:** ")[
+                1
+            ].split("\n")[0]
             punishment["UserID"] = int(violator_field.value.split("`")[1].split("`")[0])
             punishment["Guild"] = ctx.guild.id
-            punishment["Type"] = violator_field.value.split("Type:** ")[1].split("\n")[0]
+            punishment["Type"] = violator_field.value.split("Type:** ")[1].split("\n")[
+                0
+            ]
 
             if punishment["Type"] == "Temporary Ban":
                 try:
-                    punishment["UntilEpoch"] = int(violator_field.value.split("Until:** <t:")[1].split(">")[0])
+                    punishment["UntilEpoch"] = int(
+                        violator_field.value.split("Until:** <t:")[1].split(">")[0]
+                    )
                 except:
                     punishment["UntilEpoch"] = punishment["Epoch"]
 
-            if await self.bot.punishments.db.find_one({"Snowflake": punishment["Snowflake"]}):
+            if await self.bot.punishments.db.find_one(
+                {"Snowflake": punishment["Snowflake"]}
+            ):
                 continue
 
             await self.bot.punishments.db.insert_one(punishment)
@@ -99,9 +128,14 @@ class Utility(commands.Cog):
                 await msg.edit(
                     embed=discord.Embed(
                         title="Punishments Import",
-                        description="> **Channel:** {}\n> **After:** <t:{}:R>\n> **Imported:** `{}`".format(channel.mention, 1754516493, success),
+                        description="> **Channel:** {}\n> **After:** <t:{}:R>\n> **Imported:** `{}`".format(
+                            channel.mention, 1754516493, success
+                        ),
                         color=BLANK_COLOR,
-                    ).set_author(name=ctx.guild.name, icon_url=ctx.guild.icon.url if ctx.guild.icon else None)
+                    ).set_author(
+                        name=ctx.guild.name,
+                        icon_url=ctx.guild.icon.url if ctx.guild.icon else None,
+                    )
                 )
 
         await msg.edit(
@@ -119,7 +153,12 @@ class Utility(commands.Cog):
     )
     @commands.cooldown(1, 300, commands.BucketType.guild)
     @is_management()
-    async def import_shifts(self, ctx: commands.Context, channel: discord.TextChannel=None, time_frame: str=None):
+    async def import_shifts(
+        self,
+        ctx: commands.Context,
+        channel: discord.TextChannel = None,
+        time_frame: str = None,
+    ):
         if channel is None:
             channel = ctx.channel
 
@@ -127,14 +166,22 @@ class Utility(commands.Cog):
         if time_frame is None:
             after = datetime.datetime.fromtimestamp(1754516493)
         else:
-            after = datetime.datetime.fromtimestamp(datetime.datetime.now(tz=pytz.UTC).timestamp() - time_converter(time_frame))
-        
+            after = datetime.datetime.fromtimestamp(
+                datetime.datetime.now(tz=pytz.UTC).timestamp()
+                - time_converter(time_frame)
+            )
+
         msg = await ctx.send(
             embed=discord.Embed(
                 title="Shifts Import",
-                description="> **Channel:** {}\n> **After:** <t:{}:R>\n> **Imported:** 0".format(channel.mention, int(after.timestamp())),
+                description="> **Channel:** {}\n> **After:** <t:{}:R>\n> **Imported:** 0".format(
+                    channel.mention, int(after.timestamp())
+                ),
                 color=BLANK_COLOR,
-            ).set_author(name=ctx.guild.name, icon_url=ctx.guild.icon.url if ctx.guild.icon else None)
+            ).set_author(
+                name=ctx.guild.name,
+                icon_url=ctx.guild.icon.url if ctx.guild.icon else None,
+            )
         )
 
         success = 0
@@ -156,7 +203,9 @@ class Utility(commands.Cog):
 
             shift = {}
             shift["UserID"] = int(shift_field.value.split("<@")[1].split(">")[0])
-            shift["Username"] = other_field.value.split("Nickname:** ")[1].split("\n")[0]
+            shift["Username"] = other_field.value.split("Nickname:** ")[1].split("\n")[
+                0
+            ]
             shift["Nickname"] = shift["Username"]
             shift["StartEpoch"] = int(other_field.value.split("<t:")[1].split(">")[0])
             shift["Guild"] = ctx.guild.id
@@ -174,9 +223,14 @@ class Utility(commands.Cog):
                 await msg.edit(
                     embed=discord.Embed(
                         title="Shifts Import",
-                        description="> **Channel:** {}\n> **After:** <t:{}:R>\n> **Imported:** `{}`".format(channel.mention, 1754516493, success),
+                        description="> **Channel:** {}\n> **After:** <t:{}:R>\n> **Imported:** `{}`".format(
+                            channel.mention, 1754516493, success
+                        ),
                         color=BLANK_COLOR,
-                    ).set_author(name=ctx.guild.name, icon_url=ctx.guild.icon.url if ctx.guild.icon else None)
+                    ).set_author(
+                        name=ctx.guild.name,
+                        icon_url=ctx.guild.icon.url if ctx.guild.icon else None,
+                    )
                 )
 
         await msg.edit(
@@ -194,7 +248,12 @@ class Utility(commands.Cog):
     )
     @commands.cooldown(1, 300, commands.BucketType.guild)
     @is_management()
-    async def import_loas(self, ctx: commands.Context, channel: discord.TextChannel=None, time_frame: str=None):
+    async def import_loas(
+        self,
+        ctx: commands.Context,
+        channel: discord.TextChannel = None,
+        time_frame: str = None,
+    ):
         if channel is None:
             channel = ctx.channel
 
@@ -202,14 +261,22 @@ class Utility(commands.Cog):
         if time_frame is None:
             after = datetime.datetime.fromtimestamp(1754516493)
         else:
-            after = datetime.datetime.fromtimestamp(datetime.datetime.now(tz=pytz.UTC).timestamp() - time_converter(time_frame))
-        
+            after = datetime.datetime.fromtimestamp(
+                datetime.datetime.now(tz=pytz.UTC).timestamp()
+                - time_converter(time_frame)
+            )
+
         msg = await ctx.send(
             embed=discord.Embed(
                 title="LOAs Import",
-                description="> **Channel:** {}\n> **After:** <t:{}:R>\n> **Imported:** 0".format(channel.mention, int(after.timestamp())),
+                description="> **Channel:** {}\n> **After:** <t:{}:R>\n> **Imported:** 0".format(
+                    channel.mention, int(after.timestamp())
+                ),
                 color=BLANK_COLOR,
-            ).set_author(name=ctx.guild.name, icon_url=ctx.guild.icon.url if ctx.guild.icon else None)
+            ).set_author(
+                name=ctx.guild.name,
+                icon_url=ctx.guild.icon.url if ctx.guild.icon else None,
+            )
         )
 
         success = 0
@@ -222,7 +289,11 @@ class Utility(commands.Cog):
 
             embed = embeds[0]
             embed_title = embed.title.lower() if embed.title else ""
-            if "loa accepted" not in embed_title and "loa request" not in embed_title and "loa denied" not in embed_title:
+            if (
+                "loa accepted" not in embed_title
+                and "loa request" not in embed_title
+                and "loa denied" not in embed_title
+            ):
                 continue
 
             fields = embed.fields
@@ -235,15 +306,36 @@ class Utility(commands.Cog):
             loa["guild_id"] = ctx.guild.id
             loa["type"] = request_field.value.split("Type:** ")[1].split("\n")[0]
             loa["reason"] = request_field.value.split("Reason:** ")[1].split("\n")[0]
-            loa["expiry"] = int(request_field.value.split("Ends At:** <t:")[1].split(">")[0])
-            loa["expired"] = True if loa["expiry"] < int(datetime.datetime.now(tz=pytz.UTC).timestamp()) else False
+            loa["expiry"] = int(
+                request_field.value.split("Ends At:** <t:")[1].split(">")[0]
+            )
+            loa["expired"] = (
+                True
+                if loa["expiry"] < int(datetime.datetime.now(tz=pytz.UTC).timestamp())
+                else False
+            )
             loa["voided"] = False
             loa["denied"] = True if "denied" in embed_title else False
             loa["accepted"] = True if "accepted" in embed_title else False
-            loa["_id"] = "{}_{}_{}_{}".format(loa["user_id"], loa["guild_id"], request_field.value.split("Starts At:** <t:")[1].split(">")[0], loa["expiry"])
+            loa["_id"] = "{}_{}_{}_{}".format(
+                loa["user_id"],
+                loa["guild_id"],
+                request_field.value.split("Starts At:** <t:")[1].split(">")[0],
+                loa["expiry"],
+            )
 
             if await self.bot.loas.db.find_one({"_id": loa["_id"]}):
-                await self.bot.loas.db.update_one({"_id": loa["_id"]}, {"$set": {"voided": loa["voided"], "denied": loa["denied"], "accepted": loa["accepted"], "expired": loa["expired"]}})
+                await self.bot.loas.db.update_one(
+                    {"_id": loa["_id"]},
+                    {
+                        "$set": {
+                            "voided": loa["voided"],
+                            "denied": loa["denied"],
+                            "accepted": loa["accepted"],
+                            "expired": loa["expired"],
+                        }
+                    },
+                )
 
             await self.bot.loas.db.insert_one(loa)
             success += 1
@@ -253,9 +345,14 @@ class Utility(commands.Cog):
                 await msg.edit(
                     embed=discord.Embed(
                         title="LOAs Import",
-                        description="> **Channel:** {}\n> **After:** <t:{}:R>\n> **Imported:** {}".format(channel.mention, int(after.timestamp()), success),
+                        description="> **Channel:** {}\n> **After:** <t:{}:R>\n> **Imported:** {}".format(
+                            channel.mention, int(after.timestamp()), success
+                        ),
                         color=BLANK_COLOR,
-                    ).set_author(name=ctx.guild.name, icon_url=ctx.guild.icon.url if ctx.guild.icon else None)
+                    ).set_author(
+                        name=ctx.guild.name,
+                        icon_url=ctx.guild.icon.url if ctx.guild.icon else None,
+                    )
                 )
         await msg.edit(
             embed=discord.Embed(
@@ -264,7 +361,6 @@ class Utility(commands.Cog):
                 color=GREEN_COLOR,
             )
         )
-
 
     @commands.hybrid_command(
         name="staff_sync",
@@ -433,6 +529,68 @@ class Utility(commands.Cog):
             icon_url=self.bot.user.display_avatar.url,
         )
         await ctx.reply(embed=embed)
+
+    @commands.hybrid_command(
+        name="help",
+        description="View all available commands.",
+        extras={"category": "Utility"},
+    )
+    async def help(self, ctx: commands.Context):
+        # Map original categories to consolidated display categories
+        category_map = {
+            "Utility": "General",
+            "Website": "General",
+            "Privacy": "General",
+            "Configuration": "Configuration",
+            "Custom Commands": "Configuration",
+            "Punishments": "Moderation",
+            "Infractions": "Moderation",
+            "Search": "Moderation",
+            "Staff Conduct": "Moderation",
+            "Shift Management": "Staff",
+            "Staff Management": "Staff",
+            "Activity Management": "Staff",
+            "Reminders": "Staff",
+            "Game Logging": "ERLC",
+        }
+
+        categories = {}
+        for cmd in self.bot.walk_commands():
+            if cmd.hidden:
+                continue
+            category = (cmd.extras or {}).get("category")
+            if not category:
+                continue
+            if isinstance(cmd, commands.Group):
+                continue
+            display_category = category_map.get(category, category)
+            categories.setdefault(display_category, []).append(cmd)
+
+        pages = {}
+        for category in sorted(categories.keys()):
+            cmds = sorted(categories[category], key=lambda c: c.qualified_name)
+            cmd_list = "\n\n".join(
+                f"**/{cmd.qualified_name}:** {cmd.description or 'No description'}"
+                for cmd in cmds
+            )
+            embed = discord.Embed(
+                title=category,
+                description=cmd_list,
+                color=BLANK_COLOR,
+            )
+            pages[category] = embed
+
+        first_category = sorted(categories.keys())[0]
+        view = MultiPaginatorMenu(
+            ctx.author.id,
+            sorted(categories.keys()),
+            pages,
+        )
+
+        await ctx.send(
+            embed=pages[first_category],
+            view=view,
+        )
 
     @commands.hybrid_group(name="api")
     async def api(self, ctx):
