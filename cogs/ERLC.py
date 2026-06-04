@@ -1520,5 +1520,71 @@ class ERLC(commands.Cog):
             )
 
 
+    @server.command(
+        name="911",
+        description="Configure 911 emergency call alerts for your server.",
+    )
+    @is_management()
+    async def erlc_911(
+        self, ctx: commands.Context,
+        channel: typing.Optional[discord.TextChannel] = None,
+        ping_role: typing.Optional[discord.Role] = None,
+        enabled: typing.Optional[bool] = None,
+    ):
+        settings = await self.bot.settings.find_by_id(ctx.guild.id) or {}
+        erlc = settings.get("ERLC", {})
+        alert_config = erlc.get("emergency_alerts", {})
+
+        if channel is None and ping_role is None and enabled is None:
+            status = "Enabled" if alert_config.get("enabled") else "Disabled"
+            ch = f"<#{alert_config['channel']}>" if alert_config.get("channel") else "Not set"
+            roles = ", ".join(f"<@&{r}>" for r in alert_config.get("mentioned_roles", [])) or "None"
+
+            container = discord.ui.Container()
+            container.add_item(discord.ui.TextDisplay(
+                f"### 911 Alert Configuration\n"
+                f"> **Status:** {status}\n"
+                f"> **Channel:** {ch}\n"
+                f"> **Ping Roles:** {roles}\n\n"
+                f"Use `/erlc 911 channel:#channel ping_role:@role enabled:True` to configure."
+            ))
+            return await ctx.send(
+                view=discord.ui.LayoutView().add_item(container),
+                allowed_mentions=discord.AllowedMentions.none(),
+            )
+
+        if channel:
+            alert_config["channel"] = channel.id
+        if ping_role:
+            roles = alert_config.get("mentioned_roles", [])
+            if ping_role.id in roles:
+                roles.remove(ping_role.id)
+            else:
+                roles.append(ping_role.id)
+            alert_config["mentioned_roles"] = roles
+        if enabled is not None:
+            alert_config["enabled"] = enabled
+
+        erlc["emergency_alerts"] = alert_config
+        settings["ERLC"] = erlc
+        await self.bot.settings.upsert({"_id": ctx.guild.id, **settings})
+
+        status = "Enabled" if alert_config.get("enabled") else "Disabled"
+        ch = f"<#{alert_config['channel']}>" if alert_config.get("channel") else "Not set"
+        roles = ", ".join(f"<@&{r}>" for r in alert_config.get("mentioned_roles", [])) or "None"
+
+        container = discord.ui.Container()
+        container.add_item(discord.ui.TextDisplay(
+            f"### 911 Alert Configuration Updated\n"
+            f"> **Status:** {status}\n"
+            f"> **Channel:** {ch}\n"
+            f"> **Ping Roles:** {roles}"
+        ))
+        await ctx.send(
+            view=discord.ui.LayoutView().add_item(container),
+            allowed_mentions=discord.AllowedMentions.none(),
+        )
+
+
 async def setup(bot):
     await bot.add_cog(ERLC(bot))

@@ -2128,10 +2128,120 @@ class APIRoutes:
                 status_code=500, detail=f"Internal server error: {str(e)}"
             )
 
+    async def POST_erlc_webhook(self, request: Request):
+        signature = request.headers.get("X-Signature-Ed25519")
+        timestamp = request.headers.get("X-Signature-Timestamp")
+        if not signature or not timestamp:
+            raise HTTPException(status_code=401, detail="Missing signature headers")
+
+        body = await request.body()
+        if not verify_erlc_signature(signature, timestamp, body):
+            raise HTTPException(status_code=401, detail="Invalid signature")
+
+        payload = await request.json()
+        server_key = payload.get("server")
+        events = payload.get("events", [])
+
+        guild_doc = await self.bot.server_keys.db.find_one({"key": server_key})
+        if not guild_doc:
+            return {"status": "ok"}
+
+        guild_id = guild_doc["_id"]
+        settings = await self.bot.settings.find_by_id(guild_id)
+        if not settings:
+            return {"status": "ok"}
+
+        alert_config = settings.get("ERLC", {}).get("emergency_alerts", {})
+        if not alert_config.get("enabled") or not alert_config.get("channel"):
+            return {"status": "ok"}
+
+        guild = self.bot.get_guild(guild_id)
+        if not guild:
+            return {"status": "ok"}
+
+        channel = guild.get_channel(alert_config["channel"])
+        if not channel:
+            return {"status": "ok"}
+
+        for event in events:
+            event_type = event.get("event")
+            if event_type not in ("EmergencyCallStarted", "EmergencyCallEnded"):
+                continue
+
+            data = event.get("data", {})
+            team = data.get("team", "ALL")
+
+            team_filters = alert_config.get("teams")
+            if team_filters and team not in team_filters:
+                continue
+
+            team_label = TEAM_LABELS.get(team, team)
+            call_number = data.get("callNumber", "?")
+            description = data.get("description") or "No description"
+            position_desc = data.get("positionDescriptor") or "Unknown location"
+            caller_id = data.get("caller")
+
+            if event_type == "EmergencyCallStarted":
+                caller_text = f"[{caller_id}](https://www.roblox.com/users/{caller_id}/profile)" if caller_id else "Unknown"
+
+                container = discord.ui.Container()
+                container.add_item(discord.ui.TextDisplay(
+                    f"### 911 Emergency Call\n"
+                    f"> **Call #{call_number}**\n"
+                    f"> **Team:** {team_label}\n"
+                    f"> **Caller:** {caller_text}\n"
+                    f"> **Location:** {position_desc}\n"
+                    f"> **Description:** {description}"
+                ))
+
+                role_pings = ", ".join(
+                    f"<@&{role}>" for role in alert_config.get("mentioned_roles", [])
+                )
+                await channel.send(
+                    content=role_pings or None,
+                    view=discord.ui.LayoutView().add_item(container),
+                    allowed_mentions=discord.AllowedMentions(roles=True),
+                )
+
+            elif event_type == "EmergencyCallEnded":
+                container = discord.ui.Container()
+                container.add_item(discord.ui.TextDisplay(
+                    f"### 911 Call Ended\n"
+                    f"> **Call #{call_number}** ({team_label}) has been resolved."
+                ))
+                await channel.send(
+                    view=discord.ui.LayoutView().add_item(container),
+                )
+
+        return {"status": "ok"}
+
 
 api = FastAPI()
 
 from fastapi import Request
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
+from cryptography.hazmat.primitives.serialization import load_der_public_key
+import base64
+
+ERLC_PUBLIC_KEY_B64 = "MCowBQYDK2VwAyEAjSICb9pp0kHizGQtdG8ySWsDChfGqi+gyFCttigBNOA="
+ERLC_PUBLIC_KEY = load_der_public_key(base64.b64decode(ERLC_PUBLIC_KEY_B64))
+
+TEAM_LABELS = {
+    "Police": "Police",
+    "Fire": "Fire Department",
+    "DOT": "DOT",
+    "ALL": "All Services",
+}
+
+
+def verify_erlc_signature(signature_hex: str, timestamp: str, body: bytes) -> bool:
+    try:
+        signature = bytes.fromhex(signature_hex)
+        message = timestamp.encode("utf-8") + body
+        ERLC_PUBLIC_KEY.verify(signature, message)
+        return True
+    except Exception:
+        return False
 
 
 class MyMiddleware:
