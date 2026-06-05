@@ -2219,19 +2219,11 @@ class APIRoutes:
 api = FastAPI()
 
 from fastapi import Request
-from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 from cryptography.hazmat.primitives.serialization import load_der_public_key
 import base64
+from utils.constants import TEAM_LABELS
 
-ERLC_PUBLIC_KEY_B64 = "MCowBQYDK2VwAyEAjSICb9pp0kHizGQtdG8ySWsDChfGqi+gyFCttigBNOA="
-ERLC_PUBLIC_KEY = load_der_public_key(base64.b64decode(ERLC_PUBLIC_KEY_B64))
-
-TEAM_LABELS = {
-    "Police": "Police",
-    "Fire": "Fire Department",
-    "DOT": "DOT",
-    "ALL": "All Services",
-}
+ERLC_PUBLIC_KEY = load_der_public_key(base64.b64decode(config("ERLC_WEBHOOK_PUBLIC_KEY", default="MCowBQYDK2VwAyEAjSICb9pp0kHizGQtdG8ySWsDChfGqi+gyFCttigBNOA=")))
 
 
 def verify_erlc_signature(signature_hex: str, timestamp: str, body: bytes) -> bool:

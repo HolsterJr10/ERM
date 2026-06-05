@@ -83,6 +83,13 @@ ONE_WEEK = 7 * 24 * 60 * 60
 
 DAY_NAMES = {1: "Sunday", 2: "Monday", 3: "Tuesday", 4: "Wednesday", 5: "Thursday", 6: "Friday", 7: "Saturday"}
 
+TEAM_LABELS = {
+    "Police": "Police",
+    "Fire": "Fire Department",
+    "DOT": "DOT",
+    "ALL": "All Services",
+}
+
 SERVER_CONDITIONS = {
     "In-Game Players": "ERLC_Players",
     "In-Game Moderators": "ERLC_Moderators",
